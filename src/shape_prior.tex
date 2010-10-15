@@ -1,0 +1,489 @@
+% ----------------- %
+% A priori de forme %
+% ----------------- %
+
+\newpage
+\chapter{\Ls~with shape prior}
+\label{chap:shape}
+
+\section[Leventon \etal]{Leventon \etal \cite{Leventon2000}}
+\label{sec:shape-leventon}
+
+\paragraph{Curve representation}
+~\par \vspace{0.3cm}
+
+Each curve in the training dataset is embedded as the zero level set of a higher dimensional surface $\phi$, whose height is sampled at regular intervals (say $N^d$ samples, where $d$ is the number of dimensions). The embedding function chosen is the commonly used signed distance function, where each sample encodes the distance to the nearest point on the curve, with negative values inside the curve. Each such surface (distance map) can be considered a point in a high dimensional space ($\phi \in \Rset^{N^d}$). The training set $T$, consists of a set of surfaces $T = \{\phi_1, \cdots, \phi_n \}$. The goal is to build a shape model over this distribution of surfaces. Since a signed distance map is uniquely determined from the zero level set, each distance map has a large amount of redundancy. Furthermore, the collection of curves in the training set presumably has some dependence, as they are shapes of the same class of object, introducing more redundancy in the training set. The cloud of points corresponding to the training set is approximated to have a Gaussian distribution, where most of the dimensions of the Gaussian collapse, leaving the principal modes of shape variation.
+
+The mean surface $\mu$, is computed by taking the mean of the signed distance functions, $\mu = \frac{1}{n} \sum_{i=1}^n \phi_i$. The variance in shape is computed using Principal Component Analysis (PCA). The mean shape $\mu$ is subtracted from each $\phi_i$ to create an mean-offset map $\hat{\phi}_i$. Each such map $\hat{\phi}_i$ is placed as a column vector in an $N^d \times n$-dimensional matrix $M$. Using Singular Value Decomposition (SVD), the covariance matrix $\frac{1}{n}MM^T$ is decomposed as:
+\begin{equation}
+  \label{eq:decomp_leventon}
+  U\Sigma U^T = \frac{1}{n}MM^T
+\end{equation}
+where $U$ is a matrix whose column vectors represent the set of orthogonal modes of shape variation and $\Sigma$ is a diagonal matrix of corresponding singular values. An estimate of a novel shape $\phi$ of the same class of object can be represented by $k$ principal components in a $k$-dimensional vector of coefficients $\alpha = U_k^T(\phi-\mu)$, where $U_k$ is a matrix consisting of the $k$ first columns of $U$ that is used to project a surface into the eigen-space. Given the coefficients $\alpha$, an estimate of the shape $\phi$, namely $\tilde{\phi}$, is reconstructed from $U_k$ and $\mu$:
+\begin{equation}
+  \label{eq:recomstr_leventon}
+  \tilde{\phi} = \alpha U_k + \mu.
+\end{equation}
+Under the assumption of a Gaussian distribution of shape represented by $\alpha$, the probability of a certain curve can be computed as:
+\begin{equation}
+  \label{eq:prob_leventon}
+  P(\alpha) = \frac{1}{\sqrt{(2\pi)^k|\Sigma_k|}}exp \left(-\frac{1}{2}\alpha^T\Sigma_k^{-1}\alpha \right),
+\end{equation}
+where $\Sigma_k$ contents the $k$ first rows and columns of $\Sigma$.
+
+
+\paragraph{Evolution equation}
+\begin{equation}
+  \label{eq:dphidt-leventon}
+  \phi(t+1) = \phi(t) + \lambda_1[g(c + \kappa) \|\nabla\phi(t)\| + \nabla\phi(t)\cdot\nabla g] + \lambda_2(\phi^\ast(t) - \phi(t)),
+\end{equation}
+where $c$ is an image-dependent balloon force added to force the contour to flow outward, $\lambda_1$ is a parameter defining the update step size, $\lambda_2 \in [0;1]$ is the linear coefficient that determines how much to trust the maximum a posteriori estimate and $\phi^\ast$ is the estimate of the final surface:
+\begin{equation}
+  \label{eq:phi*-leventon}
+  \phi_{MAP}^\ast = \underset{\phi^\ast}{argmax}(P(\phi^\ast \; | \; \phi, \nabla I)),
+\end{equation}
+which is completely determined by the shape $\alpha$ and the pose $p$:
+\begin{equation}
+  \label{eq:shape-pose-leventon}
+  \langle\alpha_{MAP}, p_{MAP}\rangle = \underset{\phi^\ast}{argmax}(P(\alpha, p \; | \; \phi, \nabla I)).
+\end{equation}
+To compute the maximum a posteriori final curve, the terms from eq. \refeq{eq:shape-pose-leventon} are expanded using Bayes' Rule (proof in Appendix \ref{par:Proof-MAP-leventon}):
+\begin{equation}
+  \label{eq:MAP-leventon}
+  P(\alpha, p \; | \; \phi, \nabla I) = \frac{P(\phi \; | \; \alpha,p)P(\nabla I \; | \; \alpha, p, \phi)P(\alpha)P(p)}{P(\phi,\nabla I)}.
+\end{equation}
+
+
+\paragraph{Proof of equation \refeq{eq:MAP-leventon}}
+\label{par:Proof-MAP-leventon}
+~\par \vspace{0.3cm}
+\emph{Note 1:} $P(A,B) = P(A \cap B)$
+
+\emph{Note 2:} Bayes' rule
+\begin{eqnarray}
+  \label{eq:sec-bayes}
+  & P(A \cap B) = P(B \; | \; A)P(A) = P(A \; | \; B)P(B) \label{eq:sec-bayes1}\\
+  & \Rightarrow P(A \; | \; B) = \dfrac{P(B \; | \; A)P(A)}{P(B)} \label{eq:sec-bayes2}.
+\end{eqnarray}
+
+Using Bayes' rule \refeq{eq:sec-bayes2} we can write:
+\begin{equation}
+  \label{eq:sec-MAP-leventon1}
+  P(\alpha, p \; | \; \phi, \nabla I) = \frac{P(\phi,\nabla I \; | \; \alpha, p)P(\alpha,p)}{P(\phi, \nabla I)}
+\end{equation}
+Then using Bayes' rule \refeq{eq:sec-bayes1}, the first term of the numerator can be modified as follows:
+\begin{align}
+  \label{eq:sec-MAP-leventon2}
+  \nonumber P(\phi,\nabla I \; | \; \alpha, p) & = \dfrac{P(\phi,\nabla I,\alpha, p)}{P(\alpha,p)} = \dfrac{P(\nabla I \cap \phi \cap \alpha \cap p)}{P(\alpha,p)} \\
+  \nonumber & = \dfrac{P(\nabla I \; | \; \phi,\alpha,p)P(\phi,\alpha,p)}{P(\alpha,p)} = \dfrac{P(\nabla I \; | \; \phi,\alpha,p)P(\phi \; | \; \alpha, p)P(\alpha,p)}{P(\alpha,p)} \\
+  & = P(\nabla I \; | \; \phi,\alpha,p)P(\phi \; | \; \alpha, p)
+\end{align}
+
+Replacing equation \refeq{eq:sec-MAP-leventon2} into equation \refeq{eq:sec-MAP-leventon1} and assuming that shape is independent from pose yields to:
+\begin{equation}
+  \label{eq:sec-MAP-leventon3}
+  P(\alpha, p \; | \; \phi, \nabla I) = \dfrac{P(\phi \; | \; \alpha,p)P(\nabla I \; | \; \alpha, p, \phi)P(\alpha)P(p)}{P(\phi,\nabla I)}.
+\end{equation}
+
+
+\newpage
+\section[Chen \etal]{Chen \etal \cite{Chen2002}}
+\label{sec:shape-chen}
+
+\paragraph{Energy criterion}
+~\par \vspace{0.3cm}
+Let $C^\ast$ be a curve, called the shape prior, representing the expected shape of the boundary.
+
+\begin{equation}
+  \label{eq:NRJ-chen}
+  E(C, \mu, R, T) = \int_0^1 \left[ g(\| \nabla I(C(p))\|) + \frac{\lambda}{2}d^2(\mu RC(p) +T) \right] \|C'(p)\|dp,
+\end{equation}
+where $g$ is defined as in equation \refeq{eq:g_caselles}, $I(\cdot)$ corresponds to the image intensity, $C$ is the parametric curve, $\lambda$ is a parameter that weights the influence of the shape prior term and $d(x, y) = d(C^\ast, (x, y))$ is the distance of the point $(x, y)$ from $C^\ast$.
+
+\vspace{0.3cm}
+\emph{Note}: Two curves $C_1$ and $C_2$ have the same shape, if there exist a scale $\mu$, a rotation matrix $R$ (rotation by an angle $\theta$ ) and a translation vector $T$ such that $C_1$ coincides with $C_2^{new} = \mu RC_2 + T$.
+
+\vspace{0.3cm}
+In the \ls~formalism, equation \refeq{eq:NRJ-chen} can be rewriten as follows:
+\begin{equation}
+  \label{eq:NRJ-chen2}
+  E(C, \mu, R, T) = \int_\Omega \delta(\phi(\vecx{x})) \left[ g(\| \nabla I(\vecx{x}))\|) + \frac{\lambda}{2}d^2(\mu R\vecx{x} +T) \right] \| \nabla \phi(\vecx{x}) \| d\vecx{x},
+\end{equation}
+where $\delta$ is the dirac function and $\Omega$ the definition domain.
+
+\paragraph{Evolution equation}
+~\par \vspace{0.3cm}
+The gradient/variation descent for the energy of equation \refeq{eq:NRJ-chen2} is performed by the following system:
+\begin{equation}
+  \label{eq:dphidt-chen}
+  \frac{\partial \phi}{\partial t} = \delta(\phi) \text{div}\left[\left(g + \frac{\lambda}{2}d^2\right)\frac{\nabla \phi}{\| \nabla \phi \|}\right], \, x \in \Omega, \, t > 0,
+\end{equation}
+\begin{equation}
+  \label{eq:dphidn-chen}
+  \frac{\partial \phi}{\partial \vec{N}} = 0, \, x \in \delta\Omega, \, t > 0, \, \phi(x, 0) = \phi_0(x),
+\end{equation}
+\begin{equation}
+  \label{eq:dmudt-chen}
+  \frac{\partial \mu}{\partial t} = -\lambda \int_\Omega \delta(\phi(\vecx{x})) d \nabla d \cdot (R\vecx{x}) \| \nabla \phi(\vecx{x}) \| d\vecx{x}, \, t>0, \, \mu(0) = \mu_0,
+\end{equation}
+\begin{equation}
+  \label{eq:dthetadt-chen}
+  \frac{\partial \theta}{\partial t} = -\lambda \mu \int_\Omega \delta(\phi(\vecx{x})) d \nabla d \cdot \left( \frac{dR}{d\theta} \vecx{x} \right) \| \nabla \phi(\vecx{x}) \| d\vecx{x}, \, t>0, \, \theta(0) = \theta_0,
+\end{equation}
+\begin{equation}
+  \label{eq:dTdt-chen}
+  \frac{\partial T}{\partial t} = -\lambda \int_\Omega \delta(\phi(\vecx{x})) d \nabla d \| \nabla \phi(\vecx{x}) \| d\vecx{x}, \, t>0, \, T(0) = T_0,
+\end{equation}
+where the function $d$ is evaluated at $\mu RC(p) + T$.
+
+
+\paragraph{Curve representation}
+~\par \vspace{0.3cm}
+A set of training images which contain example curves with similar shape is used to extract an average of these curves. The training set contains $n$ given curve $C_1, \cdots, C_n$ with similar shape, but different size, orientation and translation. Let $A_1$ and $A_2$ denote the interior regions of the curves $C_1$ and $C_2$ as subsets of $\Rset^2$. Define
+\begin{equation}
+  \label{eq:a-chen}
+  a(C_1, C_2) = area \, of (A_1 \cup A_2 - A_1 \cap A_2).
+\end{equation}
+$a(C_1, C_2)$ is used to measure the similarity of the shapes of $C_1$ and $C_2$. To compare the shapes of the $n$ contours, $C_1$ is fixed, and $C_j$ $(j=2, \cdots, n)$ are realigned to $C_1$ by finding a scale $\mu_j$, a rotation matrix $R_j$ and a translation vector $T_j$ such that the area $a(C_1, C_j^{new})$ is minimized, where $C_j^{new} = \mu_j R_j C_j + T_j$. After the realignment of these curves, the average shape is computed:
+\begin{equation}
+  \label{eq:C*-chen}
+  C^* = \frac{C_1 + \sum_{j=2}^n {C_j^{new}}} {n}.
+\end{equation}
+
+
+
+\newpage
+\section[Rousson and Paragios]{Rousson and Paragios \cite{Rousson2002}}
+\label{sec:shape-rousson}
+
+\paragraph{Curve representation}
+~\par \vspace{0.3cm}
+
+A shape model is generated that accounts for global statistical and local variations. In order to do that, a stochastic framework with two unknown variables:
+\begin{itemize}
+ \item the shape image, $\phi_M (x, y)$,
+ \item the local degrees (variability) of shape deformations $\sigma_M (x,y)$,
+\end{itemize}
+is considered, where each grid location can be described in the shape model using a Gaussian density function
+
+\begin{equation}
+  \label{eq:DensityFunctions-rousson}
+  p_{x,y}^M(\phi) = \frac{1}{\sqrt{2\pi}\sigma_M(x,y)} \exp\left(-\frac{(\phi-\phi_M(x,y))^2}{2\sigma_M^2(x,y)} \right).
+\end{equation}
+
+The mean of this probability density function corresponds to the \ls~function, while the variance refers to the variation of the aligned samples in this location. On top of these assumptions, a constraint is imposed that mean values of the shape model
+refer to a signed distance function (level set representation).
+
+Thus given $N$ aligned training samples (\ls~representations) where $\hat{\phi_i}$ is the aligned transformation of $\phi_i$, a variational framework can be constructed for the estimation of the best shape by seeking for the maximum likelihood of the local densities with respect to ($\phi_M$, $\sigma_M$):
+\begin{align}
+  \label{eq:NRJAlign-rousson}
+  \nonumber E(\phi_M,\sigma_M) = & (1-\alpha)\int_\Omega \left( \left(\frac{d}{dx}\sigma_M(x,y)\right)^2 + \left(\frac{d}{dy}\sigma_M(x,y)\right)^2 \right) \, dxdy \\
+  & + \alpha \int_\Omega \sum_{i=1}^N{ \left(\log[\sigma_M(x,y)] + \frac{(\hat{\phi_i}(x,y) - \phi_M(x,y))^2}{2\sigma_M^2(x,y)}\right) } \, dxdy
+\end{align}
+
+\paragraph{Energy criterion}
+~\par \vspace{0.3cm}
+
+Given the current \ls~representation $\phi$, one can assume that there is an ideal transformation $A = (Ax, Ay)$ between the shape prior and the evolving representation. During the model construction, the shape model was considered as having some local degrees of variability. In that case the ideal transformation will map each value of current representation at the most probable value on the model:
+\begin{align}
+  \label{eq:Transform-rousson}
+  \begin{cases}
+    \nonumber & (x,y) \rightarrow A(x,y) \\
+    max_{x,y}\left(p_{A(x,y)}^M(s\phi(x,y))\right), \, \forall (x,y) & H(\phi(x,y)) \geq 0.
+  \end{cases}
+\end{align}
+The most probable transformation is the one ontained through the maximum likelihood for all pixels. Under the assumption that densities are independent across pixels, the minimization of the log-function of the maximum likelihood can be considered as global optimization criterion. This criterion refers to two set of unknown variables. The linear transformation $A$, and the \ls~function $\phi$:
+\begin{eqnarray}
+  \label{eq:NRJ-rousson}
+  \nonumber E(\phi,A) = & -\int_\Omega H(\phi(\vecx{x})) & \log \left( p_{A(x,y)}^M(s\phi(\vecx{x})) \right) \, d\vecx{x} \\
+  = & \int_\Omega H(\phi(\vecx{x})) & \left( \log(\sigma_M(A(\vecx{x}))) + \dfrac{(s\phi(\vecx{x}) - \phi_M(A(\vecx{x})))^2}{2\sigma_M^2(A(\vecx{x}))}\right) \, d\vecx{x}
+\end{eqnarray}
+
+
+\paragraph{Evolution equation}
+\begin{equation}
+  \label{eq:dphidt-rousson}
+  \frac{\partial}{\partial t}\phi(\vecx{x}) = -sH(\phi(\vecx{x}))\left(\frac{s\phi(\vecx{x}) - \phi_M(A(\vecx{x}))}{\sigma_M^2(A(\vecx{x}))} \right) - \delta(\phi(\vecx{x}))\left(\log(\sigma_M(A(\vecx{x}))) + \frac{(s\phi(\vecx{x}) - \phi_M(A(\vecx{x})))^2}{2\sigma_M^2(A(\vecx{x}))} \right)
+\end{equation}
+
+
+
+\newpage
+\section[Cremers \etal]{Cremers \etal 2003 \cite{Cremers2003b}}
+\label{sec:shape-cremers2003b}
+
+\paragraph{Energy criterion}
+\begin{equation}
+  \label{eq:NRJ_cremers2003b}
+  E(\phi) = \int_\Omega F(I(\vecx{x}), \phi(\vecx{x})) \, d\vecx{x} + \nu \int_\Omega \| \nabla H(\phi(\vecx{x})) \| d\vecx{x} + \alpha E_{shape}(\phi),
+\end{equation}
+where $F(I(\vecx{x}), \phi(\vecx{x}))$ is defined as in equation \refeq{eq:F_chanvese} and
+\begin{equation}
+  \label{eq:Eshape_cremers2003b}
+  E_{shape}(\phi,L) = \int_\Omega (\phi(\vecx{x}) - \phi_0(\vecx{x}))^2 (L + 1)^2 \, d\vecx{x} \; + \, \int_\Omega \lambda^2 (L - 1)^2 \, d\vecx{x} \; + \, \gamma \int_\Omega \| \nabla H(L) \| \, d\vecx{x},
+\end{equation}
+where $\phi_0$ is the \ls~function embedding a given training shape (or the mean of a set of training shapes) and $L$ is a labeling function ($L \, : \, \Omega \, \mapsto \, \Rset$) that models a selective shape prior  and indicates the areas of the image plane in which a given prior should be enforced. This labeling function is to take on the values $+1$ and $-1$ depending on whether the prior should be enforced or not.
+
+\emph{Note:} The energy defined in equation \refeq{eq:Eshape_cremers2003b} does not take into account the pose of the object. This can be done by introducing  a set of pose parameters associated with a given prior (\cite{Chen2002, Rousson2002, Cremers2006}). The corresponding shape energy 
+\begin{align}
+  \label{eq:Eshape_pose_cremers2003b}
+  \nonumber E_{shape}(\phi,L,s,R_\theta,h) = & \int_\Omega (\phi(\vecx{x}) - \frac{1}{s}\phi_0(s R_\theta\vecx{x} + h))^2 (L + 1)^2 \, d\vecx{x} \\
+	& + \, \int_\Omega \lambda^2 (L - 1)^2 \, d\vecx{x} \;  + \, \gamma \int_\Omega \| \nabla H(L) \| \, d\vecx{x},
+\end{align}
+is simultaneously optimized with respect to the segmenting \ls~function $\phi$, the labeling function $L$ and transformation parameters, which account for translation $h$, rotation by an angle $\theta$ and scaling $s$ of the template. The division by $s$ guarantees that the resulting shape remains a distance function.
+
+
+\paragraph{Evolution equation}
+~\par \vspace{0.3cm}
+For fixed labeling $L$ and pose parameters $p$, local optimization of the \ls~function $\phi$ leads to
+\begin{equation}
+  \label{eq:evol_cremers2003b}
+  \frac{\partial \phi}{\partial t}(\vecx{x}) = \delta(\phi(\vecx{x})) \left( \nabla_\phi F(I(\vecx{x}), \phi(\vecx{x})) + \nu \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\|\nabla \phi(\vecx{x})\|}\right) \right) - 2\alpha (L + 1)^2(\phi - \phi_0),
+\end{equation}
+where $\nabla_\phi F(I(\vecx{x}),\phi(\vecx{x}))$ is defined as in equation\refeq{eq:gradF_chanvese}.
+
+For fixed labeling $L$ and \ls~function $\phi$, local optimization of the pose parameters $p$ can be implemented by gradient descent. With $\vecx{g} = s R_\theta \vecx{x} + h$, the evolution equations for translation $h$ , rotation $\theta$ and scaling $s$ associated with the shape model $\phi_0$, are given by (see also \cite{Cremers2006}):
+\begin{equation}
+  \label{eq:h_evol_cremers2003b}
+  \frac{\partial h}{\partial t} =  2\int_\Omega \frac{(\phi(\vecx{x}) - \frac{1}{s}\phi_0(\vecx{g}))}{s} (L + 1)^2 \nabla\phi_0(\vecx{g}) \, d\vecx{x},
+\end{equation}
+\begin{equation}
+  \label{eq:theta_evol_cremers2003b}
+  \frac{\partial \theta}{\partial t} =  2\int_\Omega (\phi(\vecx{x}) - \frac{1}{s}\phi_0(\vecx{g})) (L + 1)^2 \nabla\phi_0(\vecx{g})^T \frac{\partial R_\theta}{\partial \theta} \vecx{x} \, d\vecx{x},
+\end{equation}
+\begin{equation}
+  \label{eq:s_evol_cremers2003b}
+  \frac{\partial s}{\partial t} =  2\int_\Omega \frac{(\phi(\vecx{x}) - \frac{1}{s}\phi_0(\vecx{g}))}{s} (L + 1)^2 [\nabla\phi_0(\vecx{g})^T R_\theta \vecx{x} - \frac{1}{s}\phi_0(\vecx{g})] \, d\vecx{x},
+\end{equation}
+
+
+\paragraph{Labeling function}
+~\par \vspace{0.3cm}
+According to the proposed cost functional, the labeling will evolve in an unsupervised manner driven by two criteria:
+\begin{enumerate}
+ \item The labeling should enforce the shape prior in those areas of the image where the \ls~function is similar to the prior. In particular, for fixed $\phi$, minimizing the first two terms in equation \refeq{eq:Eshape_cremers2003b} will generate the following qualitative behavior of the labeling:
+ \begin{itemize}
+   \item $L \rightarrow +1$,  if $|\phi - \phi_0 | < \lambda$,
+   \item $L \rightarrow -1$, if $|\phi - \phi_0 | > \lambda$;
+ \end{itemize}
+ \item The boundary separating regions with shape prior from regions without shape prior should have minimal length. This regularizing constraint on the zero crossing of the labeling function - given by the last term in equation \refeq{eq:Eshape_cremers2003b} - induces a topological ``compactness`` of the regions with and without shape prior.
+\end{enumerate}
+
+For fixed $\phi$, the gradient descent equation for the labeling function is given by:
+\begin{equation}
+  \label{eq:evol_label_cremers2003b}
+  \frac{\partial L}{\partial t} = -\frac{\partial E}{\partial L} = \alpha \left( 2\lambda^2(1-L) \, - \, 2(\phi - \phi_0)^2 (1+L) \, + \, \gamma \delta(L) \text{div} \left( \frac{\nabla L}{\| \nabla L \|} \right) \right).
+\end{equation}
+The first two terms drive the labeling toward $-1$ or $+1$, depending on whether $|\phi - \phi_0|$ is larger or smaller than $\lambda$. And the last term in \refeq{eq:evol_label_cremers2003b} minimizes the length of the zero-crossing of $L$, thereby enforcing decision regions with minimal boundary.
+
+
+
+\newpage
+\section[Chan \etal]{Chan \etal 2005 \cite{Chan2005}}
+\label{sec:shape-chan2005}
+
+\paragraph{Shape representation}
+~\par \vspace{0.3cm}
+Given an object $\Omega \in \Rset^2$, which is assumed to be closed and bounded, there is a unique solution to the following equation:
+\begin{align}
+ \label{eq:chan2005-shape}
+  \| \nabla \phi \| = 1, \\
+  \begin{cases}
+     \phi(x,y) > 0, & (x,y) \in \Omega \backslash \partial \Omega \\
+     \phi(x,y) = 0, & (x,y) \in \partial \Omega \\
+     \phi(x,y) < 0, & (x,y) \in \Rset^2 \backslash \Omega \\
+  \end{cases}
+\end{align}
+Hence, any object in the plane corresponds a unique signed distance function, and vice versa.
+
+As a shape is invariant to translation, rotation and scaling, we may define an equivalent relation in the collection of objects in the plane. Any two objects are said to be equivalent if they have the same shape. Their signed distance functions are related. For example, let $\Omega_1$ and $\Omega_2$ be two objects with the same shape, and $\phi_1$ and $\phi_2$ be the signed distance functions respectively, then there exists a four-tuple $p = (a, b, r, \theta)$ such that:
+\begin{equation}
+ \label{eq:chan2005-shape2}
+  \phi_2(x,y) = r \phi_1 \left( \frac{(x-a)\cos\theta + (y-b)\sin\theta}{r}, \frac{-(x-a)\sin\theta + (y-b)\cos\theta}{r} \right),
+\end{equation}
+where $(a, b)$ represents the center, $r$ the scaling factor and $\theta$ the angle of rotation. In this way, given any object,
+consequently a signed distance function, we may get the representation of other objects in the equivalent class by
+choosing the four-tuple $p = (a, b, r, \theta)$.
+
+
+\paragraph{Energy criterion}
+\begin{equation}
+  \label{eq:NRJ_chan2005}
+  E(\phi,L,\psi) = E_{CV}(\phi) + E_{shape}(\phi,L,\psi) + E_{\psi}(\psi),
+\end{equation}
+where
+\begin{equation}
+  \label{eq:Ecv_chan2005}
+  E_{CV}(\phi) = \int_\Omega F(I(\vecx{x}), \phi(\vecx{x})) \, d\vecx{x},
+\end{equation}
+$I(\cdot)$ corresponds to the image intensity, $F(I(\vecx{x}), \phi(\vecx{x}))$ is defined as in equation \refeq{eq:F_chanvese},
+\begin{align}
+  \label{eq:Eshape_chan2005}
+  \nonumber E_{shape}(\phi,L,\psi) = \lambda & \int_\Omega (H(\phi(\vecx{x}))H(L(\vecx{x})) - H(\psi(\vecx{x})))^2 \, d\vecx{x} \\
+	& + \mu_1 \int_\Omega (1- H(L(\vecx{x}))) d\vecx{x} + \mu_2 \int_\Omega \| \nabla H(L(\vecx{x})) \| d\vecx{x},
+\end{align}
+where $\phi$ is the segmentation function, $\psi$ is the shape function and $L$ is equivalent to the labelling function in Cremers \etal \cite{Cremers2003b}. The prior shape will be compared with the region where both the level set function $\phi$ for segmentation and the labelling function $L$ are positive. The second term of equation \refeq{eq:Eshape_chan2005} encourages the area of the region $ \{ (x, y) \in \Omega : L(x, y) > 0 \}$, and the last one smoothes the boundary where $L$ separates the domain $\Omega$. $\lambda$, $\mu_1$, $\mu_2$ are non negative parameters.
+
+However, it is elusive to choose an appropriate $\mu_1$. Too large $\mu_1$ will impair the action of the labelling function because the region $\{L > 0\}$ will contain other objects besides the desirable object, and on the other hand, if it is so small, $L$ could be stable at a state that the region $\{L > 0\}$ could be smaller than what it should be.
+
+To overcome this dilemma, the last term of equation \refeq{eq:NRJ_chan2005} is introduced as:
+\begin{equation}
+  \label{eq:Epsi_chan2005}
+  E_{\psi}(\psi) = \nu \int_\Omega F(I(\vecx{x}), \psi(\vecx{x})) \, d\vecx{x},
+\end{equation}
+where $F$ is defined as in equation \refeq{eq:F_chanvese} and $\nu$ is non negative parameters.
+
+When the ideally segmentation for the goal object is obtained, the reference shape function $\psi$ should also segment the object from the image, so this term will be small.
+\vspace{0.3cm}
+
+\emph{Remark 1}: In the functional \refeq{eq:NRJ_chan2005}, the length term in $E_{CV}$ is omitted. It is partially because that the prior shape may control the smoothness of $\phi$ to some extend. However, the length term can be included in the above functional if it is necessary.
+
+\emph{Remark 2}: With the term $E_\psi$ \refeq{eq:Epsi_chan2005}, the parameters $\mu_1$ and $\mu_2$ can be fixed (in \cite{Chan2005}, they both are fixed to 0.2).
+
+
+\paragraph{Evolution equation}
+\begin{equation}
+  \label{eq:evol_chan2005}
+  \frac{\partial \phi}{\partial t}(\vecx{x}) = -\delta(\phi(\vecx{x})) \left([(I(\vecx{x}) - v)^2 - (I(\vecx{x}) - u)^2] + 2\lambda H(L(\vecx{x})) [H(\phi(\vecx{x}))H(L(\vecx{x})) - H(\psi(\vecx{x}))] \right),
+\end{equation}
+where
+\begin{equation}
+  \label{eq:evol_chan2005_v}
+  v = \frac{\int_\Omega I(\vecx{x}) \left(H(\phi(\vecx{x})) + \nu H(\psi(\vecx{x})) \right) \, d\vecx{x}}{\int_\Omega H(\phi(\vecx{x})) + \nu H(\psi(\vecx{x})) \, d\vecx{x}},
+\end{equation}
+
+\begin{equation}
+  \label{eq:evol_chan2005_u}
+  u = \frac{\int_\Omega I(\vecx{x}) \left( (1-H(\phi(\vecx{x}))) + \nu (1-H(\psi(\vecx{x}))) \right) \, d\vecx{x}}{\int_\Omega (1-H(\phi(\vecx{x}))) + \nu (1-H(\psi(\vecx{x}))) \, d\vecx{x}}.
+\end{equation}
+
+\begin{equation}
+  \label{eq:evol_chan2005_L}
+   \frac{\partial L}{\partial t}(\vecx{x}) = -\lambda H(\phi(\vecx{x}))(1-2H(\psi(\vecx{x}))) \| \nabla L(\vecx{x}) \| + \mu_1 \| \nabla L(\vecx{x}) \| + \mu_2 \| \nabla L(\vecx{x}) \| \nabla \left( \frac{\nabla L(\vecx{x})}{\| \nabla L(\vecx{x}) \|} \right).
+\end{equation}
+
+\begin{equation}
+  \label{eq:evol_chan2005_a}
+   \frac{\partial a}{\partial t} = \int_\Omega G(\phi, L, \psi) \left( \psi_{0x}(x^*, y^*) \sin \theta + \psi_{0y}(x^*,y^*) \cos \theta \right) \delta(\psi) \, d\vecx{x}d\vecx{y},
+\end{equation}
+\begin{equation}
+  \label{eq:evol_chan2005_b}
+   \frac{\partial b}{\partial t} = \int_\Omega G(\phi, L, \psi) \left( \psi_{0x}(x^*, y^*) \cos \theta + \psi_{0y}(x^*,y^*) \sin \theta \right) \delta(\psi) \, d\vecx{x}d\vecx{y},
+\end{equation}
+\begin{equation}
+  \label{eq:evol_chan2005_r}
+   \frac{\partial r}{\partial t} = \int_\Omega G(\phi, L, \psi) \left( -\psi_0(x^*, y^*) + \psi_{0x}(x^*, y^*) x^* + \psi_{0y}(x^*,y^*) y^* \right) \delta(\psi) \, d\vecx{x}d\vecx{y},
+\end{equation}
+\begin{equation}
+  \label{eq:evol_chan2005_theta}
+   \frac{\partial \theta}{\partial t} = \int_\Omega G(\phi, L, \psi) \left( -r \psi_{0x}(x^*, y^*) x^* + r \psi_{0y}(x^*,y^*) y^* \right) \delta(\psi) \, d\vecx{x}d\vecx{y},
+\end{equation}
+where
+\begin{equation}
+  \label{eq:evol_chan2005_G}
+   G(\phi, L, \psi) = 2\lambda (H(\psi) - H(\phi)H(L)) + \nu \left( (I - v)^2 - (I - u)^2 \right),
+\end{equation}
+$x^* = \dfrac{(x-a) \cos \theta + (y - b) \sin \theta}{r}$, $y^* = \dfrac{-(x-a) \sin \theta + (y - b) \cos \theta}{r}$, $\psi_{0x} = \dfrac{\partial \psi_0}{\partial x}$, $\psi_{0y} = \dfrac{\partial \psi_0}{\partial y}$.
+
+
+
+\newpage
+\section[Foulonneau \etal]{Foulonneau \etal 2006 \cite{Foulonneau2006}}
+\label{sec:shape-foulonneau}
+
+\paragraph{Shape representation}
+~\par \vspace{0.3cm}
+Denoting by $\Omega_{in}$ the inside region of a shape, the regular or geometric moments of its characteristic function (which is binary) are defined as:
+\begin{equation}
+  \label{eq:moment_geometrique}
+   M_{u,v} = \int\int_{\Omega_{in}}x^u y^v dxdy,
+\end{equation}
+
+where $(u, v) \in \Nset^2$ and $(u+v)$ is called the order of the moment. Any shape, discretized on a sufficiently fine grid, may be reconstructed from its infinite set of moments. Hence, when computed from the characteristic function, moments naturally provide region-based shape descriptors. However, a more tractable representation for reconstruction purposes is obtained by using an orthogonal basis, such as Legendre polynomials:
+\begin{equation}
+  \label{eq:moment_legendre}
+   \lambda_{p,q} = C_{pq}\int\int_{\Omega_{in}} P_p(x) P_q(y) dxdy, \,\,\,\,\,\,\, (x,y) \in [-1,1]\times[-1,1],
+\end{equation}
+where the normalizing constant is: $C_{pq} = (2p+1)(2q+1)/4$ and
+\begin{equation}
+  \label{eq:poly_legendre}
+   P_p(x) = \sum_{k=0}^p {a_{pk}x^k} = \frac{1}{2^p p!}\frac{d^p}{dx^p}(x^2-1)^p, \,\,\,\,\,\,\, x \in [-1,1],
+\end{equation}
+
+In practice, this representation is limited to a finite order $N$ and the shape descriptor is defined as $\vecx{\lambda} = \left\lbrace \lambda_{p,q}, p+q \leq N \right\rbrace$.
+
+\emph{Note:} There is a linear relationship between Legendre moments and regular moments:
+\begin{equation}
+  \label{eq:rel_Legendre_regular}
+   \lambda_{p,q} = C_{pq} \sum_{u=0}^p{\sum_{v=0}^q{ a_{pu}a_{qv}M_{u,v} }}
+\end{equation}
+
+Also, note that this description can take into account arbitrary shape topologies.
+
+
+\paragraph{Energy criterion}
+~\par \vspace{0.3cm}
+ The shape prior is defined as a distance $d$ between the evolving curve $\Gamma$, and the reference in terms of shape descriptors:
+\begin{equation}
+  \label{eq:NRJ_foulonneau1}
+  E_{prior}(\Omega_{in}(t)) = d(\lambda(\Omega_{in}),\lambda^{ref}),
+\end{equation}
+where $\Omega_{in}$ is the inside region of $\Gamma$ and $\lambda^{ref}$ is the set of moments of the reference object.
+
+In the following, the case where the shape prior is a quadratic distance is developped:
+\begin{equation}
+  \label{eq:NRJ_foulonneau2}
+  E_{prior}(\Omega_{in}(t)) = \sum_{p,q}^{p+q \leq N} {\left( \lambda_{p,q}(\Omega_{in}(t)) - \lambda_{p,q}^{ref} \right)^2}
+\end{equation}
+
+The simple case where the descriptor is invariant with regard to translation and scaling is considered, that is $\lambda$ and $\lambda^{ref}$ are computed from normalized central moments (see eq.(6) in \cite{Foulonneau2006}), i.e.,
+
+\begin{equation}
+  \label{eq:NRJ_moment_foulonneau}
+  \lambda_{p,q} = C_{pq} \sum_{u=0}^p{ \sum_{v=0}^q{ a_{pu}a_{qv}\eta_{u,v} } }
+\end{equation}
+
+
+\paragraph{Evolution equation}
+~\par \vspace{-0.5cm}
+\subparagraph{General Framework}
+\label{sspar:GenFW_foulonneau}
+Since the set of regular open domains in $\Rset^2$ does not have a structure of vector space, classical gradient descent is impracticable for a region-based functional, $E(\Omega(t)$. Instead, we can consider that $\Omega$ evolves in a velocity vector field, $\vecx{V}$, and calculate the variations of in the direction $\vecx{V}$. To this end, we use the notion of Eulerian derivative \cite{Aubert2003}.
+
+\textbf{Theorem:} \emph{The Eulerian derivative of the functional $E(\Omega(t) = \int \int_\Omega(t) k(\vecx{x},t) d\vecx{x}$ in the direction $\vecx{V}$ is given by:}
+\begin{equation}
+  \label{eq:dNRJ-aubert}
+  \delta(E(\Omega(t))) = \int\int_{\Omega(t)}{\frac{\partial k}{\partial t}(\vecx{x},t) d\vecx{x}} - \int_{\Gamma(t)}{k(\vecx{x},t) \langle\vecx{V}.\vecx{N}\rangle ds},
+\end{equation}
+
+\emph{where $\Gamma(t)$ is the boundary of and $\vecx{N}$ denotes the inward unit normal vector of $\Gamma(t)$.}
+
+\subparagraph{Derivation of the shape prior term} Applying the strategy described in \ref{sspar:GenFW_foulonneau} (with two levels of dependency) in order to minimize $J_{prior}$ leads, in the particular case \refeq{eq:NRJ_foulonneau2}, to the following flow:
+\begin{equation}
+  \label{eq:dphidt-foulonneau}
+  \frac{\partial \Gamma}{\partial t} = \sum_{u,v}^{u+v\leq N} {A_{uv} \left( H_{uv}(x,y,\Omega_{int}) + \sum_{i=0}^2 { B_{uvi} \cdot L_i(x,y) } \right) } \vec{N},
+\end{equation}
+where
+\begin{equation}
+  \label{eq:Auv-foulonneau}
+  A_{uv} = 2 \sum_{p,q}^{p+q\leq N} { \left( \lambda_{p,q} - \lambda_{p,q}^{ref} \right) C_{pq} a_{pu} a_{qv} },
+\end{equation}
+\begin{equation}
+  \label{eq:Huv-foulonneau}
+  H_{uv}(x,y,\Omega_{in}) = \frac{(x - \bar x)^u(y - \bar y)^v}{(\beta |\Omega_{in})^{(u+v+2)/2} },
+\end{equation}
+\begin{equation}
+  \label{eq:Buv0-foulonneau}
+  B_{uv0} = \frac{u \cdot \bar x}{\beta^\frac{1}{2} |\Omega_{in}|^\frac{3}{2}} \eta_{u-1,v} + \frac{v \cdot \bar y}{\beta^\frac{1}{2} |\Omega_{in}|^\frac{3}{2}} \eta_{u,v-1} - \frac{u + v + 2}{2|\Omega_{in}|} \eta_{u,v},
+\end{equation}
+\begin{equation}
+  \label{eq:Buv1-2-foulonneau}
+  B_{uv1} = -\frac{u}{\beta^\frac{1}{2} |\Omega_{in}|^\frac{3}{2}} \eta_{u-1,v}, \, \, \, \, \, \, \, \, \, \, \, \, \, \, \,
+  B_{uv2} = -\frac{v}{\beta^\frac{1}{2} |\Omega_{in}|^\frac{3}{2}} \eta_{u,v-1},
+\end{equation}
+\begin{equation}
+  \label{eq:L0-1-2-foulonneau}
+  L_0 = 1, \, \, \, \, \, \, \, \, \, \, \, \, \, \, \,
+  L_1 = x, \, \, \, \, \, \, \, \, \, \, \, \, \, \, \,
+  L_2 = y.
+\end{equation}

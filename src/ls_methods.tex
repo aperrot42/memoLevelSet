@@ -1,0 +1,290 @@
+% ---------------- %
+% Level-set Method %
+% ---------------- %
+
+\newpage
+
+\fancyhead{} % Headers
+\fancyhead[LE,RO]{\nouppercase\leftmark}
+\fancyhead[LO,RE]{\nouppercase\rightmark}
+
+\chapter{``Classical'' \ls~methods}
+\label{chap:ls-methods}
+
+\section[Caselles]{Caselles \cite{Caselles1997}}
+\label{sec:Caselles}
+
+\paragraph{Energy criterion}
+\begin{equation}
+	\label{eq:NRJ_caselles}
+	E(\Gamma) = \int_0^1 g(I(\Gamma(q))) \|\Gamma'(q)\| dq,
+\end{equation}
+where
+\begin{equation}
+	\label{eq:g_caselles}
+	g(I) = \frac{1}{1 + \| \nabla (G \ast I) \|^2},
+\end{equation}
+$I(\cdot)$ corresponds to the image intensity, $\Gamma$ is the parametric curve and $G$ is a gaussian filter of variance 1.
+
+\paragraph{Evolution equation}
+\begin{equation}
+	\label{eq:evol_caselles}
+	\frac{\partial \phi}{\partial t}(\vecx{x}) = g(I(\vecx{x})) \| \nabla \phi(\vecx{x}) \| \kappa + \nabla g(I(\vecx{x})) \nabla \phi(\vecx{x}).
+\end{equation}
+where $\kappa = \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\| \nabla \phi(\vecx{x}) \|} \right)$ corresponds to the curvature of the evolving contour.
+
+\paragraph{Properties}
+
+\begin{itemize}
+	\item This algorithm is a contour-based method \ie the gradient of the image is used to compute the force function. The curve will thus be driven to regions with high gradient.
+	\item This method does not require any regularization term as it is intrinsic to the method.
+\end{itemize}
+
+
+\newpage
+\section[Chan \& Vese]{Chan \& Vese \cite{ChanVese2001}}
+\label{sec:ChanVese}
+
+\paragraph{Energy criterion}
+\begin{equation}
+	\label{eq:NRJ_chanvese}
+	E(\phi) = \int_\Omega F(I(\vecx{x}), \phi(\vecx{x})) \, d\vecx{x} + \lambda \int_\Omega \delta(\phi(\vecx{x})) \| \nabla \phi(\vecx{x}) \|d\vecx{x},
+\end{equation}
+where $\delta$ is the dirac function and 
+\begin{equation}
+	\label{eq:F_chanvese}
+	F(I(\vecx{x}),\phi(\vecx{x})) = H(\phi(\vecx{x}))(I(\vecx{x}) - v)^2 + (1 - H(\phi(\vecx{x})))(I(\vecx{x}) - u)^2,
+\end{equation}
+$H$ is the Heaviside function, $u$ and $v$ are two parameters updated at each iteration as follows:
+
+\begin{equation}
+	\label{eq:u_chanvese}
+	u = \frac{\int_\Omega (1 - H(\phi(\vecx{x}))) \cdot I(\vecx{x})\, d\vecx{x}}{\int_\Omega 1 - H(\phi(\vecx{x})) \, d\vecx{x}} 
+\end{equation}
+\begin{equation}
+	\label{eq:v_chanvese}
+	v = \frac{\int_\Omega H(\phi(\vecx{x})) \cdot I(\vecx{x})\, d\vecx{x}}{\int_\Omega H(\phi(\vecx{x})) \, d\vecx{x}} 
+\end{equation}
+
+The first integral of \refeq{eq:NRJ_chanvese} correspond to a data attached term and the second is a regularization term that acts on the evolving contour.
+
+\paragraph{Evolution equation}
+\begin{equation}
+	\label{eq:evol_chanvese}
+	\frac{\partial \phi}{\partial t}(\vecx{x}) = \delta(\phi(\vecx{x})) \nabla_\phi F(I(\vecx{x}), \phi(\vecx{x})) + \lambda \delta(\phi(\vecx{x})) \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\|\nabla \phi(\vecx{x})\|}\right),
+\end{equation}
+where
+\begin{equation}
+	\label{eq:gradF_chanvese}
+	\nabla_\phi F(I(\vecx{x}),\phi(\vecx{x})) = \delta(\phi(\vecx{x}))((I(\vecx{x}) - v)^2 - (I(\vecx{x}) - u)^2)
+\end{equation}
+
+\paragraph{Properties}
+
+\begin{itemize}
+	\item This algorithm is a region-based method. It tends to separate the image into two homogeneous region (according to their mean value).
+	\item The evolution is only computed on the narrow-band of the \ls~thus making it sensitive to initialization.
+\end{itemize}
+
+
+\newpage
+\section[Chunming Li]{Chunming Li \cite{Li2008}}
+\label{sec:Li}
+
+\paragraph{Energy criterion}
+\begin{eqnarray}
+	\label{eq:NRJ_li}
+	\nonumber E(\phi) = & \lambda_1 \int \int K_\sigma(\vecx{x} - \vecx{y}) | I(\vecx{y}) - f_1(\vecx{x}) |^2 H(\phi(\vecx{x})) \, d\vecx{y}d\vecx{x} \\
+	& + \lambda_2 \int \int K_\sigma(\vecx{x} - \vecx{y}) | I(\vecx{y}) - f_2(\vecx{x}) |^2 (1 - H(\phi(\vecx{x})))\, d\vecx{y}d\vecx{x} \\ 
+	\nonumber & + \nu \int| \nabla H(\phi(\vecx{x})) |d\vecx{x} + \mu \int \frac{1}{2}\left(\|\nabla \phi(\vecx{x}) \| - 1\right)d\vecx{x},
+\end{eqnarray}
+where $I(\vecx{x})$ is the image intensity at pixel $\vecx{x}$, $H$ is the Heaviside function, $K_\sigma$ is a gaussian kernel defined as:
+\begin{equation}
+	\label{eq:Ksigma_li}
+	K_\sigma(\vecx{u}) = \frac{1}{(2\pi)^{n/2}\sigma^n}e^{-\|\vecx{u}\|^2/2\sigma^2},
+\end{equation}
+with a scale parameter $\sigma > 0$. $f_1$ and $f_2$ are two functions centered at pixel $\vecx{x}$ and defined as:
+\begin{equation}
+	\label{eq:f1_li}
+	f_1(\vecx{x}) = \frac{K_\sigma \ast (H(\phi(\vecx{x}))I(\vecx{x}))}{K_\sigma \ast H(\phi(\vecx{x}))},
+\end{equation}
+\begin{equation}
+	\label{eq:f2_li}
+	f_2(\vecx{x}) = \frac{K_\sigma \ast ((1 - H(\phi(\vecx{x})))I(\vecx{x}))}{K_\sigma \ast (1- H(\phi(\vecx{x})))}.
+\end{equation}
+
+The two first integrals of \refeq{eq:NRJ_li} correspond to data attached term. The third integral is a regularization term that minimizes the curve length. The last integral is a regularization term that forces the \ls~to keep signed distance properties over the evolution process.
+
+\paragraph{Evolution equation}
+\begin{eqnarray}
+	\label{eq:evol_li}
+	\nonumber \frac{\partial \phi}{\partial t}(\vecx{x}) = & \delta(\phi(\vecx{x})) \left( \lambda_1 \int K_\sigma(\vecx{x} - \vecx{y}) | I(\vecx{y}) - f_1(\vecx{x}) |^2 \, d\vecx{y} + \lambda_2 \int \int K_\sigma(\vecx{x} - \vecx{y}) | I(\vecx{y}) - f_2(\vecx{x}) |^2 \, d\vecx{y} \right) \\ 
+	& + \nu \delta(\phi(\vecx{x})) \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\|\nabla \phi(\vecx{x})\|}\right) + \mu \left( \nabla^2 \phi(\vecx{x}) - \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\|\nabla \phi(\vecx{x})\|}\right) \right),
+\end{eqnarray}
+
+\paragraph{Properties}
+
+\begin{itemize}
+	\item Because of the localization effects introduced by $f_1$, $f_2$ and $K_\sigma$, this algorithm is able to segment inhomogeneous objects.
+	\item This algorithm segments the whole image.
+\end{itemize}
+
+
+\newpage
+\section[Lankton]{Lankton \cite{Lankton2008}}
+\label{sec:Lankton}
+
+\paragraph{Energy criterion}
+\begin{equation}
+	\label{eq:NRJ_lankton}
+	E(\phi) = \int_{\Omega_x} \delta(\phi(\vecx{x})) \int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot F(I(\vecx{y}), \phi(\vecx{y})) \, d\vecx{y}d\vecx{x} + \lambda \int_{\Omega_x} \delta(\phi(\vecx{x})) \| \nabla \phi(\vecx{x}) \|d\vecx{x},
+\end{equation}
+where $\delta$ is the Dirac function, $B$ is a ball of radius $r$ centered at point $\vecx{x}$ and defined as follow:
+\begin{equation}
+	\label{eq:B}
+	B(\vecx{x},\vecx{y}) = 
+	\begin{cases}
+		1, & \|\vecx{x}-\vecx{y}\| \leq r \\
+		0, & otherwise,
+	\end{cases}
+\end{equation}
+and
+\begin{equation}
+	\label{eq:F_lankton}
+	F(I(\vecx{y}),\phi(\vecx{y})) = 
+	\begin{cases}
+		H(\phi(\vecx{y}))(I(\vecx{y}) - v_\vecx{x})^2 + (1 - H(\phi\vecx{y})))(I(\vecx{y}) - u_\vecx{x})^2, & \text{Chan \& Vese feature,}\\
+		(v_\vecx{x} - u_\vecx{x})^2, & \text{Yezzi feature,}
+	\end{cases}
+\end{equation}
+where $H$ is the Heaviside function, $u_\vecx{x}$ and $v_\vecx{x}$ are two parameters updated at each iteration as follows:
+
+\begin{equation}
+	\label{eq:u_lankton}
+	u_\vecx{x} = \frac{\int_{\Omega_y} B\vecx{x},\vecx{y}) \cdot (1 - H(\phi(\vecx{y}))) \cdot \vecx{y})\, d\vecx{y}}{\int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot (1 - H(\phi(\vecx{y}))) \, d\vecx{y}} 
+\end{equation}
+\begin{equation}
+	\label{eq:v_lankton}
+	v_\vecx{x} = \frac{\int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot H(\phi(\vecx{y})) \cdot I(\vecx{y})\, d\vecx{y}}{\int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot H(\phi(\vecx{y})) \, d\vecx{y}} 
+\end{equation}
+
+The first integral of \refeq{eq:NRJ_lankton} correspond to a data attached term and the second is a regularization term that acts on the evolving contour.
+
+\paragraph{Evolution equation}
+\begin{equation}
+	\label{eq:evol_lankton}
+	\frac{\partial \phi}{\partial t}(\vecx{x}) = \delta(\phi(\vecx{x})) \int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot \nabla_\phi F(I(\vecx{y}), \phi(\vecx{y})) \, d\vecx{y} + \lambda \delta(\phi(\vecx{x})) \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\|\nabla \phi(\vecx{x})\|}\right),
+\end{equation}
+where
+\begin{equation}
+	\label{eq:gradF_lankton}
+	\nabla_\phi F(I(\vecx{y}),\phi(\vecx{y})) = 
+	\begin{cases}
+		\delta(\phi(\vecx{y}))((I(\vecx{y}) - v_\vecx{x})^2 - (I(\vecx{y}) - u_\vecx{x})^2), & \text{Chan \& Vese feature,}\\
+		\delta(\phi(\vecx{y})) \left( \frac{(I(\vecx{y}) - v_\vecx{x})^2}{A_v} - \frac{(I(\vecx{y}) - u_\vecx{x})^2}{A_u}\right), & \text{Yezzi feature,}
+	\end{cases}
+\end{equation}
+where $A_u$ and $A_v$ are the area of the local interior and local exterior regions respectively given by
+\begin{equation}
+	\label{eq:Au_lankton}
+	A_u = \int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot (1 - H(\phi(\vecx{x}))) \, d\vecx{y}
+\end{equation}
+\begin{equation}
+	\label{eq:Av_lankton}
+	A_v = \int_{\Omega_y} B(\vecx{x},\vecx{y}) \cdot H(\phi(\vecx{x})) \, d\vecx{y}
+\end{equation}
+
+\paragraph{Properties}
+
+\begin{itemize}
+	\item This algorithm is a region-based method.
+	\item Its feature term is computed locally. This property allows the algorithm to segment non homogeneous objects. However this make the method sensitive to initialization.
+\end{itemize}
+
+
+\newpage
+\section[Bernard]{Bernard \cite{Bernard2009a}}
+\label{sec:Bernard}
+
+\paragraph{Model}
+~\par \vspace{0.3cm}
+
+Let $\Omega$ be a bounded open subset of $\Rset^{d}$ and let $f:\Omega\mapsto\Rset$ be a given $d$-dimensional image. In the \bs~\ls~ formalism, the evolving interface $\Gamma\subset\Rset^{d}$ is represented as the zero level-set of an implicit function \LS~expressed as a linear combination of \bs~ basis functions
+\begin{equation}
+\label{eq:phi-bernard}
+\phi({\vecx{x}})=\sum_{{\vecx{k}}\in{\Zset}^{d}}\,c[{\vecx{k}}]\,\beta^{n} \left(\frac{{\vecx{x}}}{h}-{\vecx{k}}\right).
+\end{equation}
+
+Here, $\beta^{n}(\cdot)$ is the uniform symmetric $d$-dimensional \bs~ of degree $n$. The knots of the \bs~ are located on a grid spanning $\Omega$, with a regular spacing. The coefficients of the \bs~ representation are gathered in $c[\vecx{k}]$. $h$ is a scale parameter which directly influence the degree of smoothing of the interface.
+
+\paragraph{Energy criterion}
+\begin{equation}
+	\label{eq:NRJ-bernard}
+	E(\phi) = \int_{\Omega} F(I(\vecx{x}),\phi(\vecx{x})) \, d\vecx{x},
+\end{equation}
+where 
+\begin{equation}
+	\label{eq:F_bernard}
+	F(I(\vecx{x}),\phi(\vecx{x})) = H(\phi(\vecx{x}))(I(\vecx{x}) - v)^2 + (1 - H(\phi(\vecx{x})))(I(\vecx{x}) - u)^2,
+\end{equation}
+$H$ is the Heaviside function, $u$ and $v$ are two parameters updated at each iteration according to equation \refeq{eq:u_chanvese} and \refeq{eq:v_chanvese}.
+
+\paragraph{Evolution equation}
+~\par \vspace{0.3cm}
+
+The minimization of the functional \refeq{eq:NRJ-bernard} can be done with respect to the \bs~coefficients $c[\vecx{k}]$. The derivatives with respect to each \bs~coefficient $c[\vecx{k}_{\textbf{0}}]$ may be expressed as
+\begin{equation}
+	\label{eq:dEdck-bernard}
+	\frac{\partial E}{\partial c[\vecx{k}_{\vecx{0}}]} = \int_{\Omega}{\frac{\partial F(\vecx{x},\phi(\vecx{x}))}{\partial \phi(\vecx{x})} \cdot \beta^{n}\left( \frac{\vecx{x}}{h} - \vecx{k}_{\vecx{0}} \right) \, d\vecx{x}},
+\end{equation}
+with 
+\begin{equation}
+	\label{eq:gradF-bernard}
+	\frac{\partial F(\vecx{x},\phi(\vecx{x}))}{\partial \phi(\vecx{x})} = \delta(\phi(\vecx{x})( (I(\vecx{x})-v)^2 - (I(\vecx{x}) - u)^2 ).
+\end{equation}
+
+The level-set evolution may then be computed through a gradient descent on the \bs~coefficients. The corresponding variation of the \bs~coefficients is given as:
+\begin{equation}
+	\label{eq:evol-bernard}
+	\vecx{c}^{i+1} = \vecx{c}^{i} - \lambda\nabla_{c}E(\vecx{c}^{i}),
+\end{equation}
+where $\lambda$ is the iteration step and $\nabla_{c}$ correspond to the gradient of the energy relative to the \bs~coefficients given by \refeq{eq:dEdck-bernard}.
+
+\paragraph{Properties}
+
+\begin{itemize}
+	\item This algorithm computes the \ls~evolution on the whole image. So new contours could emerge far from the initialization.
+	\item This algorithm is a region-based method and tries to separate the image into two homogeneous region (according to their means value).
+\end{itemize}
+
+
+\newpage
+\section[Shi]{Shi \cite{Shi2008}}
+\label{sec:Shi}
+
+\paragraph{Model}
+~\par \vspace{0.3cm}
+
+\hspace{0.7cm} This method is a fast algorithm that approximate \ls~based curve evolution. The implicit function is represented using a limited set of integers (-3, -1, 1, 3) to define the interior points, the interior points adjacent to the evolving curve, the exterior points adjacent to the evolving curve, the exterior points. Moreover the points adjacent to the evolving curve are gathered into two lists: $L_{in}$ and $L_{out}$.
+\vspace{0.3cm}
+
+The curve evolution process is then approximated in a two-cycle algorithm:
+\begin{enumerate}
+	\item during Na iterations, the curve evolve using a data attachment term $F_d$.
+	\item then the curve is smoothed during Ns iterations; the regularization term $F_r$ is computed for each point of $L_{in}$ and $L_{out}$ using a gaussian filter of variance $\sigma$ and size Ng$\times$Ng.
+\end{enumerate}
+
+\paragraph{Evolution equation}
+~\par \vspace{0.3cm}
+In \cite{Shi2008}, several data attached term are given. In the platform, we choose to use the Chan \& Vese one given by:
+\begin{equation}
+	\label{eq:F_shi}
+	F(I(\vecx{x}),\phi(\vecx{x})) = H(\phi(\vecx{x}))(I(\vecx{x}) - v)^2 + (1 - H(\phi(\vecx{x})))(I(\vecx{x}) - u)^2
+\end{equation}
+where $H$ is the Heaviside function, $u$ and $v$ are two parameters updated at each iteration according to equation \refeq{eq:u_chanvese} and \refeq{eq:v_chanvese}.
+
+\paragraph{Properties}
+
+\begin{itemize}
+	\item This method is an approximation of \ls~based curve evolution. It is a very fast method and evolves only on the narrow-band.
+\end{itemize}

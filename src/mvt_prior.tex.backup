@@ -1,0 +1,173 @@
+% --------------------- %
+% A priori de mouvement %
+% ---------------------%
+
+\newpage
+\chapter{\Ls~with motion prior}
+\label{chap:mvt}
+
+\section[Zhang and Pless]{Zhang and Pless 2005\cite{Zhang2005}}
+\label{sec:motion-zhang}
+
+This method is designed for cardiopulmonary sequences segmentation. Thus the following framework only 2 degrees of freedom are used to parameterize the manifold.
+
+\paragraph{Energy criterion}
+~\par \vspace{0.3cm}
+For cardiopulmonary image sequences, the images vary in principle depending on their cardiac phase $u$ and pulmonary phase $v$ - the two degrees of freedom that parameterize the manifold. Isomap is used to automatically parameterize all images, and interpolate the result to generate evenly spaced samples of the image manifold $f(x, y, u, v)$. Accordingly, the seeked contour $C$ is also a function of $u$ and $v$, and $C$ has to be described implicitly by the \ls~function $\phi$ in 4-dimension space $\Omega$. Thus, a given cardiopulmonary image sequence specifies this contour by extending the energy functional \refeq{eq:NRJ_chanvese} to 4-dimension space:
+\begin{equation}
+  \label{eq:ls_zhang}
+  \underset{c1,c2,\phi}{inf}E(c1,c2,\phi),
+\end{equation}
+where $c_1$ and $c_2$ are the interior and exterior means respectively and $\phi: \Rset^4 \rightarrow \Rset$.
+
+But the manifold dimensions also correspond to specific kinds of deformation. The breathing of the patient results, approximately, in a translation of the heart. Therefore, the variation of $\phi$ in the $v$ direction is expected to be a uniform translation. That is, the energy functional change $\frac{\partial \phi}{\partial v}$ should be consistent with a uniform translation. This induces a \ls~corollary to the classic optic flow constraint equation:
+\begin{equation}
+  \label{eq:ls_OpticalFlow_zhang}
+  \frac{\partial \phi}{\partial x}\omega_x + \frac{\partial \phi}{\partial y}\omega_y + \frac{\partial \phi}{\partial v} = 0
+\end{equation}
+where $(\omega_x, \omega_y)^T$ is the velocity vector that is constant over any given image, but may vary for different values of $u$ and $v$.
+
+On the other hand, varying images along the other axis of the image manifold, deformations due to the cardiac cycle lead to image variation with minimal overall translation. For the special case of deformation caused by (non-uniform) heart expansion and contraction, the constraint can be expressed as:
+\begin{equation}
+  \label{eq:ls_dphidu_zhang}
+  \frac{\partial \phi}{\partial u} = \omega_u
+\end{equation}
+where $\omega_u$ is constant over the region of the heart for any given $u$ and $v$. This constraint enforces the condition that moving along the ``heartbeat'' axis simply adds or subtracts a constant value of the \ls~function $\phi$, and therefore enforces that the shape either expands or shrinks.
+
+Using these two constraints, the motion constraints can be written as an energy functional:
+\begin{equation}
+  \label{eq:NRJ_zhang}
+  E(\phi) = \eta_1 \int_\Omega \left( \frac{\partial \phi}{\partial x}\omega_x + \frac{\partial \phi}{\partial y}\omega_y + \frac{\partial \phi}{\partial v} \right)^2 \, dxdy + \eta_2 \int_\Omega \left( \frac{\partial \phi}{\partial u} - \omega_u \right)^2 \, dxdy.
+\end{equation}
+
+\vspace{0.3cm}
+\paragraph{Evolution equation}
+~\par \vspace{0.3cm}
+Given an initial \ls~function $\phi_0$, the functional \refeq{eq:NRJ_zhang} is minimized by iterating two steps, first using the current estimate of $\phi$ to estimate $c_1$, $c_2$ and solving for $\omega_x(u, v)$, $\omega_y(u, v)$, and $\omega_u(u, v)$, and then evolving $\phi$ by:
+\begin{eqnarray}
+  \label{eq:dphidt_zhang}
+  \nonumber \frac{\partial \phi}{\partial t} = &\delta(\phi(\vecx{x})) \nabla_\phi F(I(\vecx{x}), \phi(\vecx{x})) + \lambda \delta(\phi(\vecx{x})) \text{div}\left(\frac{\nabla \phi(\vecx{x})}{\|\nabla \phi(\vecx{x})\|}\right) + 2\eta_2 \left( \dfrac{\partial^2 \phi}{\partial u^2} - \dfrac{\partial \omega_u}{\partial u} \right) \\
+ & + 2\eta_1 \left( \dfrac{\partial^2 \phi}{\partial x^2}\omega_x^2 + \dfrac{\partial^2 \phi}{\partial y^2}\omega_y^2 + \dfrac{\partial^2 \phi}{\partial v^2} + 2\dfrac{\partial^2 \phi}{\partial x\partial y}\omega_x\omega_y + 2\dfrac{\partial^2 \phi}{\partial x\partial v}\omega_x + 2\dfrac{\partial^2 \phi}{\partial y\partial v}\omega_y \right)
+\end{eqnarray}
+
+
+\vspace{0.3cm}
+\paragraph{Manifolds learning using isomap embedding}
+~\par \vspace{0.3cm}
+The Isomap procedure for dimensionality reduction starts by computing the distance between all pairs of images (using some distance function such as SSD pixel intensities). Then, a graph is defined with each image as a node and undirected edges connecting each image to its $k$-closest neighbors (usually choosing $k$ between $5$ and $10$). A complete pair-wise distance matrix is calculated by solving for the all-pairs shortest paths in this sparse graph. Finally, this complete distance matrix is embedded into some low dimension by solving an Eigenvalue problem (Multidimensional Scaling (MDS)). The dimensionality embedding can be chosen as desired, but ideally is the number of degrees of freedom in the image set.
+
+Previous work that applies manifold learning to biomedical image analysis suggests modifying Isomap to use image distance functions other than pixel intensity differences. For data sets with deformable motion, the suggested distance function is computed as the phase difference of local complex Gabor filters:
+\begin{equation}
+  \label{eq:local_Gabor_filter_zhang}
+  \|I_1 - I_2 \|_{motion} = \sum_{x,y} { \psi(G(\omega, V, \sigma) \otimes I_1, G(\omega, V, \sigma) \otimes I_2) + \psi(G(\omega, H, \sigma) \otimes I_1, G(\omega, H, \sigma) \otimes I_2) }
+\end{equation}
+where $G(\omega, H, \sigma)$ is defined to be the 2D complex Gabor filter with frequency $\omega$, oriented either vertically or horizontally, with $\sigma$ as the variance of the modulating Gaussian, and $\psi$ returns the phase difference of the pair of complex Gabor responses above some threshold $\tau$.
+
+An even sampling of this manifold simplifies the numerical implementation of the \ls~segmentation. However, the given image sequence may not be evenly distributed in the manifold space. Ideally, it is desirable to have a continuous image function $f$ to describe all possible cardiopulmonary images. One may interpolate the image function $f$ locally by fitting thin-plate smoothing spline to the given images ${I_i | i = 1 \cdots n}$ and their associated manifold position ${(u_i , v_i) | i = 1 \cdots n}$, such that $f(x, y, u, v)$ minimizes the following weighted sum:
+\begin{equation}
+  \label{eq:spline_zhang}
+  (1-p) \sum_{i=1}^n {|I_i(x,y) - f(x,y,u_i,v_i)|^2} + p \int { \left| \frac{\partial^2 f(x,y)}{\partial^2 u} \right|^2 + 2\left| \frac{\partial^2 f(x,y)}{\partial u \partial v} \right|^2 + \left| \frac{\partial^2 f(x,y)}{\partial v^2} \right|^2 \, dudv},
+\end{equation}
+where $p$ is a the smoothing parameter.
+
+
+
+\newpage
+\section[Cremers and Soatto]{Cremers and Soatto 2005 \cite{Cremers2005, Cremers2003}}
+\label{sec:motion-cremers}
+
+\paragraph{Energy criterion}
+~\par \vspace{0.3cm}
+Let $\Omega \in \Rset^2$ denote the image plane and let $f: \Omega \times \Rset \rightarrow \Rset$ be a gray value image sequence. Denote the spatio-temporal image gradient of $f(\vecx{x}, t)$ by 
+\begin{equation}
+  \label{eq:2DTgradient_cremers2005}
+  \nabla_3 f = \left( \frac{\partial f}{\partial x_1}, \frac{\partial f}{\partial x_2}, \frac{\partial f}{\partial t} \right)^t
+\end{equation}
+Let $ v : \Omega \rightarrow \Rset^3, \, v(\vecx{x}) = ( u(\vecx{x}), w(\vecx{x}), 1)^t,$ be the velocity vector at a point $\vecx{x}$ in homogeneous coordinates.
+
+With these definitions, the problem of motion estimation now consists in maximizing the conditional probability
+\begin{equation}
+  \label{eq:Proba_v-gradf_cremers2005}
+  P(v | \nabla_3 f) = \frac{P(\nabla_3 f | v)P(v)}{P(\nabla_3 f)}
+\end{equation}
+with respect to the motion field $v$.
+
+Except for locations where the spatio-temporal gradient vanishes, the \emph{optic flow constraint} 
+\begin{equation}
+  \label{eq:optic_flow}
+  \frac{df}{dt} = \frac{\partial f}{\partial t} + \frac{\partial f}{\partial x_1} \frac{dx_1}{dt} + \frac{\partial f}{\partial x_2} \frac{dx_2}{dt} = v^t \nabla_3f = 0
+\end{equation}
+states that the homogeneous velocity vector must be orthogonal to the spatio-temporal image gradient. Therefore a measure of this orthogonality is used as a conditional probability on the spatio-temporal image gradient. Let $\alpha$ be the angle between the two vectors then:
+\begin{equation}
+  \label{eq:Proba_gradf-v_cremers2005}
+  P(\nabla_3 f | v) \varpropto e^{-\cos^2 \alpha} = \exp \left( - \frac{( v(\vecx{x})^t \nabla_3 f(\vecx{x}) )^2}{ |v(\vecx{x})|^2 |\nabla_3 f(\vecx{x})|^2} \right)
+\end{equation}
+
+The velocity ﬁeld $v$ is discretized by a set of disjoint regions $\Omega_i \in \Omega$ with velocity $v_i$: $v(\vecx{x}) = {v_i, if \vecx{x} \in \Omega_i}$. The prior probability on the velocity field is assumed to only depend on the length $L(C)$ of the boundary $C$ separating these regions:
+\begin{equation}
+  \label{eq:Proba_v_cremers2005}
+  P(v) \varpropto \exp \left( - \mu L(C) \right)
+\end{equation}
+
+With the above assumptions, the first term in the numerator of \refeq{eq:Proba_v-gradf_cremers2005} can be written as:
+\begin{equation}
+  \label{eq:Proba_gradf-v2_cremers2005}
+  P(\nabla_3 f | v) = \prod_{x \in \Omega} P(\nabla_3 f(\vecx{x}) | v(\vecx{x}))^h = \prod_{i=1}^n { \prod_{x \in \Omega_i} { P(\nabla_3 f(\vecx{x}) | v_i)^h } },
+\end{equation}
+where $h = d\vecx{x}$ denotes the pixel size of the discretization of $\Omega$.
+
+Maximizing the conditional probability \refeq{eq:Proba_v-gradf_cremers2005} with respect to the velocity field $v$ is equivalent to minimize the negative logarithm of this expression, which is given by the energy functional:
+\begin{equation}
+  \label{eq:NRJ_C_cremers2005}
+  E(C,\lbrace v_i \rbrace) = \sum_{i=1}^n {\int_{\Omega_i} \frac{( v(\vecx{x})^t \nabla_3 f(\vecx{x}) )^2}{ |v(\vecx{x})|^2 |\nabla_3 f(\vecx{x})|^2} \, d\vecx{x} + \mu L(C) }.
+\end{equation}
+Using the \ls~function $\phi$ (for a two-phase segmentation), eq.\refeq{eq:NRJ_C_cremers2005} can be rewritten:
+\begin{equation}
+  \label{eq:NRJ_phi_cremers2005}
+  E(\phi,v_1, v_2) = \int_\Omega \frac{( v_1(\vecx{x})^t \nabla_3 f(\vecx{x}) )^2}{ |v_1(\vecx{x})|^2 |\nabla_3 f(\vecx{x})|^2} H(\phi(\vecx{x})) \, d\vecx{x} + \int_\Omega \frac{( v_2(\vecx{x})^t \nabla_3 f(\vecx{x}) )^2}{ |v_2(\vecx{x})|^2 |\nabla_3 f(\vecx{x})|^2} (1-H(\phi(\vecx{x}))) \, d\vecx{x} + \mu L(C).
+\end{equation}
+
+
+\paragraph{Velocity field expression}
+~\par \vspace{0.3cm}
+In order to cope with complex motion regions, piecewise parametric motion can be used. The velocity on the domain $\Omega_i$ is allowed to vary according to a model of the form:
+\begin{equation}
+  \label{eq:v-model_cremers2005}
+  v_i(\vecx{x}) = M(\vecx{x})p_i,
+\end{equation}
+where $M$ is a matrix depending only on space and time and $p_i$ is the parameter vector associated with each region.
+
+Inserting model \refeq{eq:v-model_cremers2005} into the \emph{optic flow constraint} \refeq{eq:optic_flow} gives a relation which states that the vector $M^t \nabla_3 f$ must either vanish or be orthogonal to the vector $p_i$. The energy functional can thus be rewritten as:
+\begin{equation}
+  \label{eq:NRJ2_phi_cremers2005}
+  E(\phi,p_1, p_2) = \int_\Omega \frac{p_1^t T(\vecx{x})p_1}{|p_1|^2} H(\phi(\vecx{x})) \, d\vecx{x} + \int_\Omega \frac{( p_2^t T(\vecx{x})p_2 )^2}{|p_2|^2} (1-H(\phi(\vecx{x}))) \, d\vecx{x} + \mu L(C),
+\end{equation}
+where $T(\vecx{x}) = \dfrac{ \nabla_3 f^t(\vecx{x}) M(\vecx{x}) M^t(\vecx{x}) \nabla_3 f(\vecx{x}) }{ |M^t(\vecx{x}) \nabla_3 f(\vecx{x})|^2 }$.
+
+
+\paragraph{Evolution equation}
+~\par \vspace{0.3cm}
+For fixed motion vectors, the gradient descent on the functional \refeq{eq:NRJ_phi_cremers2005} for the \ls~function $\phi$ is given by:
+\begin{equation}
+  \label{eq:dphidt_cremers2005}
+  \frac{\partial \phi}{\partial t} = \delta(\phi(\vecx{x})) \left[ \mu \cdot \text{div} \left( \frac{\nabla \phi}{\| \nabla \phi \|} \right) + e_2 - e_1 \right]
+\end{equation}
+with the energy densities $e_i$ given by:
+\begin{equation}
+  \label{eq:ei_cremers2005}
+  e_i = \frac{p_i^t T(\vecx{x}) p_i}{p_i^t p_i} = \frac{p_i^t \nabla_3 f^t(\vecx{x}) M(\vecx{x}) M^t(\vecx{x}) \nabla_3 f(\vecx{x}) p_i}{|p_i|^2 |M^t(\vecx{x}) \nabla_3 f(\vecx{x})|^2}
+\end{equation}
+
+
+For fixed $\phi$, minimization of the functional \refeq{eq:NRJ_phi_cremers2005} with respect to the motion vectors $p_1$ and $p_2$ results in the eigenvalue problem:
+\begin{equation}
+  \label{eq:dpdt_cremers2005}
+  p_i = \underset{p}{argmin} \frac{p^t T_i(\vecx{x}) p}{p^t p},
+\end{equation}
+for the matrices
+
+The solution of (34) is given by the eigenvectors corresponding to the smallest eigenvalues of T1 and T2 , normalized such that its last component is 1.
+
+
+\newpage
+\cite{Papin2000}

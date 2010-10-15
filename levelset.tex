@@ -1,0 +1,118 @@
+\documentclass[twoside, 11pt]{myreport}
+
+%% ----------------------- %%
+%% start of the 'preamble' %%
+%% ----------------------- %%
+
+%___________________________________________________________
+%
+% -- Declaration of packages
+\usepackage{amsmath} % Maths pour avoir
+\usepackage{amssymb} % les ensembles
+
+\usepackage{epsfig} % Pour afficher des figures
+\usepackage{subfig} % Pour afficher plusieurs figures cote a cote
+\usepackage{wrapfig} % Pour pouvoir ecrire autour des figures
+
+\usepackage{color}	% Pour utiliser les couleurs
+\definecolor{red}{rgb}{1,0,0}	% Definition de la couleur rouge
+\definecolor{darkblue}{rgb}{0,0,0.2}
+
+% \usepackage[T1]{fontenc}    % Carateres accentues
+% \usepackage[frenchb]{babel} % Typographie francaise
+
+\usepackage[top=3cm, bottom=3cm, left=2.5cm, right=2.5cm]{geometry}
+
+\usepackage{fancyhdr} % Pour modifier les en-tete et pied de page
+\usepackage{lastpage} % Pour avoir acces au numero de la derniere page
+
+\usepackage{hyperref} % Pour avoir des liens vers les differentes parties
+\hypersetup{
+		colorlinks = true, % Pour virer les rectangles rouges autour des liens
+		linkcolor = darkblue, %black,
+		citecolor = darkblue, %black,
+		filecolor = darkblue, %black,
+		urlcolor = darkblue, %black
+}
+
+% -- End of declaration of packages
+%___________________________________________________________
+%
+
+%___________________________________________________________
+%
+% -- Various expressions
+\newcommand{\todo}[1]{\textbf{\emph{\textcolor{red}{#1}}}} % Definition de la commande todo (met le texte en rouge)
+\newcommand{\refeq}[1]{(\ref{#1})} % Pour mettre des parentheses autour des numeros d'equations
+
+\newcommand{\bs}{B-spline}
+\newcommand{\eg}{\emph{e.g. }}
+\newcommand{\etal}{\emph{et al. }}
+\newcommand{\ie}{\emph{i.e. }}
+\newcommand{\ls}{level-set}
+\newcommand{\Ls}{Level-set}
+\newcommand{\LS}{$\phi(\cdot)$}
+
+\newcommand{\vecx}{\mathbf}
+
+\def\Rset{\mathbb{R}}
+\def\Zset{\mathbb{Z}}
+\def\Nset{\mathbb{N}}
+%___________________________________________________________
+%
+% -- End of various expressions
+
+%%___________________________________________________________
+%%
+%% -- Definition of headers and footers
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter .~#1}{}}
+
+\fancyhead{} % Headers
+\fancyhead[LE,RO]{\nouppercase\leftmark}
+\fancyhead[LO,RE]{\nouppercase\rightmark}
+
+\fancyfoot{} % Footers
+\fancyfoot[CE,CO]{\thepage /\pageref{LastPage}}
+
+\headsep=20pt % Definition of spaces between header and text
+\headheight=16pt % Header's size
+\renewcommand{\footrulewidth}{0.5pt} % Width of the line separating the header from the text
+
+%% -- Fin de la definition
+%%___________________________________________________________
+%%
+
+%% ----------------- %%
+%% end of 'preamble' %%
+%% ----------------- %%
+
+%% -------------- %%
+%% begin document %%
+%% -------------- %%
+\begin{document}
+%___________________________________________________________
+%
+% -- Declaration of each part
+
+\input{src/title_page}
+\input{src/toc}
+\input{src/ls_methods}
+\input{src/shape_prior}
+\input{src/mvt_prior}
+
+% -- End of the declaration of each part
+%___________________________________________________________
+%
+
+\newpage
+
+\pagestyle{fancy}
+\fancyhead{} % Headers
+\fancyhead[LE,RO]{\nouppercase\leftmark}
+
+\bibliography{src/bibliographie}
+\bibliographystyle{IEEEbib}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\end{document}

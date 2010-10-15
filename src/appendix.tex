@@ -1,0 +1,47 @@
+% -------- %
+% Appendix %
+% -------- %
+%
+% \newpage
+%
+% \pagestyle{fancy}
+% \fancyhead{} % Headers
+% \fancyhead[LE,RO]{Appendix}
+%
+% \appendix
+% \addcontentsline{toc}{chapter}{Appendix}
+%
+% \newpage
+% \section{Mercer Kernel}
+% \label{an:mercer}
+%
+% \emph{Theorem (Mercer's theorem):} Suppose that $K : \chi \times \chi \mapsto \Rset$ is symmetric and satisfies \\ \mbox{$sup_{x,y} K(x,y) < \infty$}, and define
+% \begin{equation}
+%   \label{eq:an-mercer-defTk}
+%   T_Kf(x) = \int_\chi K(x,y)f(y)dy.
+% \end{equation}
+% Suppose that $T_K : L^2(\chi) \mapsto L^2(\chi)$ is positive semi-definite; thus,
+% \begin{equation}
+%   \label{eq:an-mercer-def2}
+%   \int_\chi \, \int_\chi K(x,y) f(x) f(y) dxdy \, \leq \,0
+% \end{equation}
+% for any $f \in L^2(\chi)$. Let $\lambda_i$, $\Psi_i$ be the eigenfunctions and eigenvectors of $T_K$, with
+% \begin{equation}
+%   \label{eq:an-mercer-def3}
+%   \int_\chi K(x,y) \Psi_i(y) dy \, = \, \lambda_i \Psi_i(x).
+% \end{equation}
+% Then
+% \begin{enumerate}
+%  \item $\displaystyle \sum_i {\lambda_i }< \infty$
+%  \item $\displaystyle sup_x \Psi_i(x) < \infty$
+%  \item $\displaystyle K(x, y) = \sum_{i=1}^\infty {\lambda_i \Psi_i(x) \Psi_i(y)}$
+% \end{enumerate}
+% where the convergence is uniform in x, y.
+%
+% Such a kernel defines a Mercer kernel. This gives the mapping into feature space as
+% \begin{equation}
+%   \label{eq:an-mercer-kernel}
+%   x \, \mapsto \, \Phi(x) = ( \sqrt{\lambda_1} \Psi_1(x), \, \sqrt{\lambda_2} \Psi_2(x), \cdots)^T
+% \end{equation}
+
+
